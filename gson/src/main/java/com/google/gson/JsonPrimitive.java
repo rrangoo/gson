@@ -16,13 +16,14 @@
 
 package com.google.gson;
 
-import com.google.gson.internal.LazilyParsedNumber;
+import com.google.gson.internal.$Gson$Preconditions;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Objects;
+
+import com.google.gson.internal.LazilyParsedNumber;
 
 /**
- * A class representing a JSON primitive value. A primitive value
+ * A class representing a Json primitive value. A primitive value
  * is either a String, a Java primitive, or a Java primitive
  * wrapper type.
  *
@@ -38,9 +39,8 @@ public final class JsonPrimitive extends JsonElement {
    *
    * @param bool the value to create the primitive with.
    */
-  @SuppressWarnings("deprecation") // superclass constructor
   public JsonPrimitive(Boolean bool) {
-    value = Objects.requireNonNull(bool);
+    value = $Gson$Preconditions.checkNotNull(bool);
   }
 
   /**
@@ -48,9 +48,8 @@ public final class JsonPrimitive extends JsonElement {
    *
    * @param number the value to create the primitive with.
    */
-  @SuppressWarnings("deprecation") // superclass constructor
   public JsonPrimitive(Number number) {
-    value = Objects.requireNonNull(number);
+    value = $Gson$Preconditions.checkNotNull(number);
   }
 
   /**
@@ -58,27 +57,24 @@ public final class JsonPrimitive extends JsonElement {
    *
    * @param string the value to create the primitive with.
    */
-  @SuppressWarnings("deprecation") // superclass constructor
   public JsonPrimitive(String string) {
-    value = Objects.requireNonNull(string);
+    value = $Gson$Preconditions.checkNotNull(string);
   }
 
   /**
    * Create a primitive containing a character. The character is turned into a one character String
-   * since JSON only supports String.
+   * since Json only supports String.
    *
    * @param c the value to create the primitive with.
    */
-  @SuppressWarnings("deprecation") // superclass constructor
   public JsonPrimitive(Character c) {
     // convert characters to strings since in JSON, characters are represented as a single
     // character string
-    value = Objects.requireNonNull(c).toString();
+    value = $Gson$Preconditions.checkNotNull(c).toString();
   }
 
   /**
    * Returns the same value as primitives are immutable.
-   *
    * @since 2.8.2
    */
   @Override
@@ -96,15 +92,14 @@ public final class JsonPrimitive extends JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a boolean value.
-   * If this primitive {@linkplain #isBoolean() is not a boolean}, the string value
-   * is parsed using {@link Boolean#parseBoolean(String)}. This means {@code "true"} (ignoring
-   * case) is considered {@code true} and any other value is considered {@code false}.
+   * convenience method to get this element as a boolean value.
+   *
+   * @return get this element as a primitive boolean value.
    */
   @Override
   public boolean getAsBoolean() {
     if (isBoolean()) {
-      return (Boolean) value;
+      return ((Boolean) value).booleanValue();
     }
     // Check to see if the value as a String is "true" in any case.
     return Boolean.parseBoolean(getAsString());
@@ -120,21 +115,14 @@ public final class JsonPrimitive extends JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a {@link Number}.
-   * If this primitive {@linkplain #isString() is a string}, a lazily parsed {@code Number}
-   * is constructed which parses the string when any of its methods are called (which can
-   * lead to a {@link NumberFormatException}).
+   * convenience method to get this element as a Number.
    *
-   * @throws UnsupportedOperationException if this primitive is neither a number nor a string.
+   * @return get this element as a Number.
+   * @throws NumberFormatException if the value contained is not a valid Number.
    */
   @Override
   public Number getAsNumber() {
-    if (value instanceof Number) {
-      return (Number) value;
-    } else if (value instanceof String) {
-      return new LazilyParsedNumber((String) value);
-    }
-    throw new UnsupportedOperationException("Primitive is neither a number nor a string");
+    return value instanceof String ? new LazilyParsedNumber((String) value) : (Number) value;
   }
 
   /**
@@ -146,21 +134,27 @@ public final class JsonPrimitive extends JsonElement {
     return value instanceof String;
   }
 
-  // Don't add Javadoc, inherit it from super implementation; no exceptions are thrown here
+  /**
+   * convenience method to get this element as a String.
+   *
+   * @return get this element as a String.
+   */
   @Override
   public String getAsString() {
-    if (value instanceof String) {
-      return (String) value;
-    } else if (isNumber()) {
+    if (isNumber()) {
       return getAsNumber().toString();
     } else if (isBoolean()) {
       return ((Boolean) value).toString();
+    } else {
+      return (String) value;
     }
-    throw new AssertionError("Unexpected value type: " + value.getClass());
   }
 
   /**
-   * @throws NumberFormatException {@inheritDoc}
+   * convenience method to get this element as a primitive double.
+   *
+   * @return get this element as a primitive double.
+   * @throws NumberFormatException if the value contained is not a valid double.
    */
   @Override
   public double getAsDouble() {
@@ -168,27 +162,33 @@ public final class JsonPrimitive extends JsonElement {
   }
 
   /**
-   * @throws NumberFormatException {@inheritDoc}
+   * convenience method to get this element as a {@link BigDecimal}.
+   *
+   * @return get this element as a {@link BigDecimal}.
+   * @throws NumberFormatException if the value contained is not a valid {@link BigDecimal}.
    */
   @Override
   public BigDecimal getAsBigDecimal() {
-    return value instanceof BigDecimal ? (BigDecimal) value : new BigDecimal(getAsString());
+    return value instanceof BigDecimal ? (BigDecimal) value : new BigDecimal(value.toString());
   }
 
   /**
-   * @throws NumberFormatException {@inheritDoc}
+   * convenience method to get this element as a {@link BigInteger}.
+   *
+   * @return get this element as a {@link BigInteger}.
+   * @throws NumberFormatException if the value contained is not a valid {@link BigInteger}.
    */
   @Override
   public BigInteger getAsBigInteger() {
-    return value instanceof BigInteger
-        ? (BigInteger) value
-        : isIntegral(this)
-            ? BigInteger.valueOf(this.getAsNumber().longValue())
-            : new BigInteger(this.getAsString());
+    return value instanceof BigInteger ?
+            (BigInteger) value : new BigInteger(value.toString());
   }
 
   /**
-   * @throws NumberFormatException {@inheritDoc}
+   * convenience method to get this element as a float.
+   *
+   * @return get this element as a float.
+   * @throws NumberFormatException if the value contained is not a valid float.
    */
   @Override
   public float getAsFloat() {
@@ -196,60 +196,98 @@ public final class JsonPrimitive extends JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a primitive long.
+   * convenience method to get this element as a primitive long.
    *
-   * @return this element as a primitive long.
-   * @throws NumberFormatException {@inheritDoc}
+   * @return get this element as a primitive long.
+   * @throws NumberFormatException if the value contained is not a valid long.
    */
   @Override
   public long getAsLong() {
+
+    if (isNumber()) {
+      final BigInteger val = getAsBigInteger();
+
+      if (val.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0) {
+        throw new NumberFormatException("Expected a Long but was " + getAsNumber());
+      } else if (val.compareTo(BigInteger.valueOf(Long.MIN_VALUE)) < 0) {
+        throw new NumberFormatException("Expected a Long but was " + getAsNumber());
+      }
+    }
+
     return isNumber() ? getAsNumber().longValue() : Long.parseLong(getAsString());
   }
 
   /**
-   * @throws NumberFormatException {@inheritDoc}
+   * convenience method to get this element as a primitive short.
+   *
+   * @return get this element as a primitive short.
+   * @throws NumberFormatException if the value contained is not a valid short value.
    */
   @Override
   public short getAsShort() {
+
+    if (isNumber()) {
+      final BigInteger val = getAsBigInteger();
+
+      if (val.compareTo(BigInteger.valueOf(Short.MAX_VALUE)) > 0) {
+        throw new NumberFormatException("Expected a Short but was " + getAsNumber());
+      } else if (val.compareTo(BigInteger.valueOf(Short.MIN_VALUE)) < 0) {
+        throw new NumberFormatException("Expected a Short but was " + getAsNumber());
+      }
+    }
+
     return isNumber() ? getAsNumber().shortValue() : Short.parseShort(getAsString());
   }
 
- /**
-  * @throws NumberFormatException {@inheritDoc}
-  */
+  /**
+   * convenience method to get this element as a primitive integer.
+   *
+   * @return get this element as a primitive integer.
+   * @throws NumberFormatException if the value contained is not a valid integer.
+   */
   @Override
   public int getAsInt() {
+
+    if (isNumber()) {
+      final BigInteger val = getAsBigInteger();
+
+      if (val.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) {
+        throw new NumberFormatException("Expected an Integer but was " + getAsNumber());
+      } else if (val.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
+        throw new NumberFormatException("Expected an Integer but was " + getAsNumber());
+      }
+    }
+
     return isNumber() ? getAsNumber().intValue() : Integer.parseInt(getAsString());
   }
 
   /**
-   * @throws NumberFormatException {@inheritDoc}
+   * convenience method to get this element as a primitive byte.
+   *
+   * @return get this element as a primitive byte.
+   * @throws NumberFormatException if the value contained is not a valid integer.
    */
   @Override
   public byte getAsByte() {
+
+    if (isNumber()) {
+      final BigInteger val = getAsBigInteger();
+
+      if (val.compareTo(BigInteger.valueOf(Byte.MAX_VALUE)) > 0) {
+        throw new NumberFormatException("Expected a Byte but was " + getAsNumber());
+      } else if (val.compareTo(BigInteger.valueOf(Byte.MIN_VALUE)) < 0) {
+        throw new NumberFormatException("Expected a Byte but was " + getAsNumber());
+      }
+    }
+
     return isNumber() ? getAsNumber().byteValue() : Byte.parseByte(getAsString());
   }
 
-  /**
-   * @throws UnsupportedOperationException if the string value of this
-   * primitive is empty.
-   * @deprecated This method is misleading, as it does not get this element as a char but rather as
-   * a string's first character.
-   */
-  @Deprecated
   @Override
   public char getAsCharacter() {
-    String s = getAsString();
-    if (s.isEmpty()) {
-      throw new UnsupportedOperationException("String value is empty");
-    } else {
-      return s.charAt(0);
-    }
+    return getAsString().charAt(0);
   }
 
-  /**
-   * Returns the hash code of this object.
-   */
   @Override
   public int hashCode() {
     if (value == null) {
@@ -267,11 +305,6 @@ public final class JsonPrimitive extends JsonElement {
     return value.hashCode();
   }
 
-  /**
-   * Returns whether the other object is equal to this. This method only considers
-   * the other object to be equal if it is an instance of {@code JsonPrimitive} and
-   * has an equal value.
-   */
   @Override
   public boolean equals(Object obj) {
     if (this == obj) {
@@ -285,9 +318,7 @@ public final class JsonPrimitive extends JsonElement {
       return other.value == null;
     }
     if (isIntegral(this) && isIntegral(other)) {
-      return this.value instanceof BigInteger || other.value instanceof BigInteger
-          ? this.getAsBigInteger().equals(other.getAsBigInteger())
-          : this.getAsNumber().longValue() == other.getAsNumber().longValue();
+      return getAsNumber().longValue() == other.getAsNumber().longValue();
     }
     if (value instanceof Number && other.value instanceof Number) {
       double a = getAsNumber().doubleValue();
@@ -307,7 +338,7 @@ public final class JsonPrimitive extends JsonElement {
     if (primitive.value instanceof Number) {
       Number number = (Number) primitive.value;
       return number instanceof BigInteger || number instanceof Long || number instanceof Integer
-          || number instanceof Short || number instanceof Byte;
+              || number instanceof Short || number instanceof Byte;
     }
     return false;
   }

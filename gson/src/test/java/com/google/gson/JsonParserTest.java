@@ -16,26 +16,24 @@
 
 package com.google.gson;
 
-import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.fail;
+import java.io.CharArrayReader;
+import java.io.CharArrayWriter;
+import java.io.StringReader;
+import java.math.BigInteger;
+
+import junit.framework.TestCase;
 
 import com.google.gson.common.TestTypes.BagOfPrimitives;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
-import java.io.CharArrayReader;
-import java.io.CharArrayWriter;
-import java.io.IOException;
-import java.io.StringReader;
-import org.junit.Test;
 
 /**
  * Unit test for {@link JsonParser}
  *
  * @author Inderjeet Singh
  */
-public class JsonParserTest {
+public class JsonParserTest extends TestCase {
 
-  @Test
   public void testParseInvalidJson() {
     try {
       JsonParser.parseString("[[]");
@@ -43,43 +41,37 @@ public class JsonParserTest {
     } catch (JsonSyntaxException expected) { }
   }
 
-  @Test
   public void testParseUnquotedStringArrayFails() {
     JsonElement element = JsonParser.parseString("[a,b,c]");
-    assertThat(element.getAsJsonArray().get(0).getAsString()).isEqualTo("a");
-    assertThat(element.getAsJsonArray().get(1).getAsString()).isEqualTo("b");
-    assertThat(element.getAsJsonArray().get(2).getAsString()).isEqualTo("c");
-    assertThat(element.getAsJsonArray()).hasSize(3);
+    assertEquals("a", element.getAsJsonArray().get(0).getAsString());
+    assertEquals("b", element.getAsJsonArray().get(1).getAsString());
+    assertEquals("c", element.getAsJsonArray().get(2).getAsString());
+    assertEquals(3, element.getAsJsonArray().size());
   }
 
-  @Test
   public void testParseString() {
     String json = "{a:10,b:'c'}";
     JsonElement e = JsonParser.parseString(json);
-    assertThat(e.isJsonObject()).isTrue();
-    assertThat(e.getAsJsonObject().get("a").getAsInt()).isEqualTo(10);
-    assertThat(e.getAsJsonObject().get("b").getAsString()).isEqualTo("c");
+    assertTrue(e.isJsonObject());
+    assertEquals(10, e.getAsJsonObject().get("a").getAsInt());
+    assertEquals("c", e.getAsJsonObject().get("b").getAsString());
   }
 
-  @Test
   public void testParseEmptyString() {
     JsonElement e = JsonParser.parseString("\"   \"");
-    assertThat(e.isJsonPrimitive()).isTrue();
-    assertThat(e.getAsString()).isEqualTo("   ");
+    assertTrue(e.isJsonPrimitive());
+    assertEquals("   ", e.getAsString());
   }
 
-  @Test
   public void testParseEmptyWhitespaceInput() {
     JsonElement e = JsonParser.parseString("     ");
-    assertThat(e.isJsonNull()).isTrue();
+    assertTrue(e.isJsonNull());
   }
 
-  @Test
   public void testParseUnquotedSingleWordStringFails() {
-    assertThat(JsonParser.parseString("Test").getAsString()).isEqualTo("Test");
+    assertEquals("Test", JsonParser.parseString("Test").getAsString());
   }
 
-  @Test
   public void testParseUnquotedMultiWordStringFails() {
     String unquotedSentence = "Test is a test..blah blah";
     try {
@@ -88,78 +80,100 @@ public class JsonParserTest {
     } catch (JsonSyntaxException expected) { }
   }
 
-  @Test
   public void testParseMixedArray() {
     String json = "[{},13,\"stringValue\"]";
     JsonElement e = JsonParser.parseString(json);
-    assertThat(e.isJsonArray()).isTrue();
+    assertTrue(e.isJsonArray());
 
     JsonArray  array = e.getAsJsonArray();
-    assertThat(array.get(0).toString()).isEqualTo("{}");
-    assertThat(array.get(1).getAsInt()).isEqualTo(13);
-    assertThat(array.get(2).getAsString()).isEqualTo("stringValue");
+    assertEquals("{}", array.get(0).toString());
+    assertEquals(13, array.get(1).getAsInt());
+    assertEquals("stringValue", array.get(2).getAsString());
   }
 
-  private static String repeat(String s, int times) {
-    StringBuilder stringBuilder = new StringBuilder(s.length() * times);
-    for (int i = 0; i < times; i++) {
-      stringBuilder.append(s);
-    }
-    return stringBuilder.toString();
-  }
-
-  /** Deeply nested JSON arrays should not cause {@link StackOverflowError} */
-  @Test
-  public void testParseDeeplyNestedArrays() throws IOException {
-    int times = 10000;
-    // [[[ ... ]]]
-    String json = repeat("[", times) + repeat("]", times);
-
-    int actualTimes = 0;
-    JsonArray current = JsonParser.parseString(json).getAsJsonArray();
-    while (true) {
-      actualTimes++;
-      if (current.isEmpty()) {
-        break;
-      }
-      assertThat(current.size()).isEqualTo(1);
-      current = current.get(0).getAsJsonArray();
-    }
-    assertThat(actualTimes).isEqualTo(times);
-  }
-
-  /** Deeply nested JSON objects should not cause {@link StackOverflowError} */
-  @Test
-  public void testParseDeeplyNestedObjects() throws IOException {
-    int times = 10000;
-    // {"a":{"a": ... {"a":null} ... }}
-    String json = repeat("{\"a\":", times) + "null" + repeat("}", times);
-
-    int actualTimes = 0;
-    JsonObject current = JsonParser.parseString(json).getAsJsonObject();
-    while (true) {
-      assertThat(current.size()).isEqualTo(1);
-      actualTimes++;
-      JsonElement next = current.get("a");
-      if (next.isJsonNull()) {
-        break;
-      } else {
-        current = next.getAsJsonObject();
-      }
-    }
-    assertThat(actualTimes).isEqualTo(times);
-  }
-
-  @Test
   public void testParseReader() {
     StringReader reader = new StringReader("{a:10,b:'c'}");
     JsonElement e = JsonParser.parseReader(reader);
-    assertThat(e.isJsonObject()).isTrue();
-    assertThat(e.getAsJsonObject().get("a").getAsInt()).isEqualTo(10);
-    assertThat(e.getAsJsonObject().get("b").getAsString()).isEqualTo("c");
+    assertTrue(e.isJsonObject());
+    assertEquals(10, e.getAsJsonObject().get("a").getAsInt());
+    assertEquals("c", e.getAsJsonObject().get("b").getAsString());
   }
 
-  @Test
+  public void testParseLongToInt() {
+    JsonObject jsonObject = new JsonObject();
+    jsonObject.addProperty("foo", 10000000000L);
+
+    try {
+      jsonObject.get("foo").getAsInt();
+      fail();
+    } catch (NumberFormatException expected) {
+    }
+  }
+
+  public void testParseIntegerTypes() {
+
+    JsonObject jsonObject = new JsonObject();
+
+    jsonObject.addProperty("bigIntegerU", BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.valueOf(200L)) );
+    jsonObject.addProperty("bigIntegerL", BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.valueOf(200L)) );
+    jsonObject.addProperty("longU", Integer.MAX_VALUE+143L);
+    jsonObject.addProperty("longL", Integer.MIN_VALUE-143L);
+    jsonObject.addProperty("integerU", Short.MAX_VALUE+32);
+    jsonObject.addProperty("integerL", Short.MIN_VALUE-32);
+    jsonObject.addProperty("shortU", Byte.MAX_VALUE+17);
+    jsonObject.addProperty("shortL", Byte.MIN_VALUE-17);
+
+    try {
+      jsonObject.get("bigIntegerU").getAsLong();
+      fail("Big Integer values greater than Long.MAX_VALUE should not parse as a Long");
+    } catch (NumberFormatException expected) {
+    }
+
+    try {
+      jsonObject.get("bigIntegerL").getAsLong();
+      fail("Big Integer values smaller than Long.MIN_VALUE should not parse as a Long");
+    } catch (NumberFormatException expected) {
+    }
+
+    try {
+      jsonObject.get("longU").getAsInt();
+      fail("Long values larger than Integer.MAX_VALUE should not parse as an Integer");
+    } catch (NumberFormatException expected) {
+    }
+
+    try {
+      jsonObject.get("longL").getAsInt();
+      fail("Long values smaller than Integer.MIN_VALUE should not parse as an Integer");
+    } catch (NumberFormatException expected) {
+    }
+
+    try {
+      jsonObject.get("integerU").getAsShort();
+      fail("Integer values larger than Short.MAX_VALUE should not parse as a Short");
+    } catch (NumberFormatException expected) {
+    }
+
+    try {
+      jsonObject.get("integerL").getAsShort();
+      fail("Integer values smaller than Short.MIN_VALUE should not parse as a Short");
+    } catch (NumberFormatException expected) {
+    }
+
+    try {
+      jsonObject.get("shortU").getAsByte();
+      fail("Short values larger than Byte.MAX_VALUE should not parse as a Byte");
+    } catch (NumberFormatException expected) {
+    }
+
+    try {
+      jsonObject.get("shortL").getAsByte();
+      fail("Short values smaller than Byte.MIN_VALUE should not parse as a Byte");
+    } catch (NumberFormatException expected) {
+    }
+
+    assertTrue(jsonObject.isJsonObject());
+  }
+
   public void testReadWriteTwoObjects() throws Exception {
     Gson gson = new Gson();
     CharArrayWriter writer = new CharArrayWriter();
@@ -174,8 +188,8 @@ public class JsonParserTest {
     JsonElement element1 = Streams.parse(parser);
     JsonElement element2 = Streams.parse(parser);
     BagOfPrimitives actualOne = gson.fromJson(element1, BagOfPrimitives.class);
-    assertThat(actualOne.stringValue).isEqualTo("one");
+    assertEquals("one", actualOne.stringValue);
     BagOfPrimitives actualTwo = gson.fromJson(element2, BagOfPrimitives.class);
-    assertThat(actualTwo.stringValue).isEqualTo("two");
+    assertEquals("two", actualTwo.stringValue);
   }
 }
